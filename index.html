@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com https://accounts.google.com https://appleid.cdn-apple.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com https://accounts.google.com; style-src-elem 'self' https://cdnjs.cloudflare.com https://fonts.googleapis.com https://accounts.google.com; style-src-attr 'unsafe-inline'; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://tile.openstreetmap.org https://cdnjs.cloudflare.com; connect-src 'self' https://overpass-api.de https://overpass.kumi.systems https://cloudflare-dns.com https://accounts.google.com https://appleid.apple.com; frame-src https://accounts.google.com https://appleid.apple.com; media-src 'self' blob:; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#241B17">
+<link rel="icon" href="favicon.ico" sizes="any"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"><link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+<meta property="og:title" content="Coffee Nomad"><meta property="og:description" content="Timed pour cues, cafés open near you and a caffeine tracker. By Coffee We Don’t Drink."><meta property="og:type" content="website"><meta name="twitter:card" content="summary">
+<title>Coffee Nomad | Pour it right. Find it nearby.</title>
+<meta name="description" content="Timed pour cues for every brew method, cafés open around you right now, and a caffeine tracker that protects your sleep. By Coffee We Don’t Drink.">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700;9..144,800&family=Instrument+Sans:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="styles.css">
+<link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="apple-touch-icon.png">
+</head>
+<body>
+<a class="skip" href="#top">Skip to content</a><div id="prog" aria-hidden="true"></div><noscript><p style="padding:16px">Coffee Nomad needs JavaScript for the map, brew timer and tracker.</p></noscript>
+<header><div class="w bar"><a class="logo" href="#top" aria-label="Coffee Nomad, home"><img class="a" src="logo.png" alt="Coffee Nomad" width="110" height="44"><img class="b" src="logo-dark.png" alt="" width="110" height="44"><img class="c" src="mark.png" alt="Coffee Nomad" width="43" height="44"><img class="d" src="mark-dark.png" alt="" width="43" height="44"></a>
+<nav class="top" aria-label="Main"><a href="#cafes">Cafés near you</a><a href="#brew">Brew lab</a><a href="#caf">Caffeine</a><a href="#owners">For owners</a></nav>
+<button class="vin" id="amb" aria-pressed="false" aria-label="Play café ambience"><span class="disc"></span><span class="vt"><span class="vl">Ambience</span><small id="ambs">Play</small></span></button>
+<button class="gh sm" id="mem" hidden>Dashboard</button>
+<button class="gh sm" id="theme" aria-label="Switch light or dark theme"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19"/></svg></button></div></header>
+<nav class="bn" aria-label="Quick navigation"><a href="#cafes"><svg viewBox="0 0 24 24"><path d="M12 21s7-6.2 7-11a7 7 0 0 0-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>Cafés</a><a href="#brew"><svg viewBox="0 0 24 24"><path d="M4 8h13v5a6 6 0 0 1-6 6h-1a6 6 0 0 1-6-6zM17 9h2a2.5 2.5 0 0 1 0 5h-2"/></svg>Brew</a><a href="#caf"><svg viewBox="0 0 24 24"><path d="M3 12h4l2-6 4 12 2-6h6"/></svg>Caffeine</a></nav>
+<main id="top">
+<div class="hero"><svg class="topo" viewBox="0 0 800 600" aria-hidden="true"><filter id="wv"><feTurbulence type="fractalNoise" baseFrequency=".007" numOctaves="2" seed="7"/><feDisplacementMap in="SourceGraphic" scale="90"/></filter><g filter="url(#wv)"><ellipse cx="480" cy="300" rx="60" ry="40"/><ellipse cx="480" cy="300" rx="110" ry="76"/><ellipse cx="480" cy="300" rx="165" ry="115"/><ellipse cx="480" cy="300" rx="225" ry="155"/><ellipse cx="480" cy="300" rx="290" ry="200"/><ellipse cx="480" cy="300" rx="360" ry="250"/><ellipse cx="480" cy="300" rx="440" ry="300"/><ellipse cx="480" cy="300" rx="520" ry="355"/></g></svg><i class="grain"></i>
+<div class="w"><div>
+<h1><span class="ln" style="--n:0"><span>Pour it right.</span></span><span class="ln" style="--n:1"><span>Find it nearby.</span></span></h1>
+<p class="fadein" style="animation-delay:.9s">Timed pour cues for every brew method, cafés open around you right now, and a caffeine tracker that protects your sleep. Put the music on and brew slowly.</p>
+<div class="fadein" style="animation-delay:1.1s"><a class="btn" href="#cafes" id="heroNear">Find open cafés near me</a> <a class="gh" href="#brew">Start a brew</a></div></div>
+<div class="stage"><video id="hv" muted loop playsinline preload="metadata" poster="assets/v60-poster.jpg" autoplay aria-label="A barista pouring water over coffee in a V60"><source src="assets/v60-pour.mp4" type="video/mp4"></video>
+<svg class="v60" viewBox="0 0 300 340" aria-hidden="true" hidden><defs><linearGradient id="cf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C98A2B"/><stop offset="1" stop-color="#5A2E14"/></linearGradient><filter id="bl"><feGaussianBlur stdDeviation="3"/></filter></defs>
+<g class="steam" fill="none" stroke="#F6F2EA" stroke-width="3" stroke-linecap="round" filter="url(#bl)"><path d="M120 244c-10-18 10-26 0-44"/><path d="M150 240c-10-18 10-26 0-44"/><path d="M180 244c-10-18 10-26 0-44"/></g>
+<path class="strm" d="M30 34C90 34 126 70 150 130" fill="none" stroke="#F2B866" stroke-width="4" stroke-linecap="round"/><path d="M14 24q12-14 34-6l8 12q-22 6-42-6z" fill="#F6F2EA" opacity=".85"/>
+<path d="M116 196h68l-10 20h-48z" fill="#4A2A18"/><ellipse class="bm" cx="150" cy="198" rx="10" ry="3"/><ellipse class="bm" cx="150" cy="198" rx="10" ry="3"/>
+<path class="liq" d="M100 262H200V302a18 18 0 0 1-18 18H118a18 18 0 0 1-18-18Z" fill="url(#cf)"/>
+<g fill="none" stroke="#F6F2EA" stroke-width="3" stroke-linejoin="round"><path d="M72 120H228L186 216H114z"/><path d="M108 216h84v12h-84z"/><path d="M96 252H204V302a22 22 0 0 1-22 22H118a22 22 0 0 1-22-22Z"/><path d="M204 264q34 0 34 24t-34 24"/></g>
+<ellipse cx="150" cy="330" rx="88" ry="7" fill="#F6F2EA" opacity=".12"/><circle class="dr" cx="150" cy="234" r="4"/><circle class="dr" cx="150" cy="234" r="4"/><circle class="dr" cx="150" cy="234" r="4"/></svg>
+<span class="tagc">V60 · 1:16.7 · 3:30</span>
+</div></div>
+<div class="mq" id="mq" aria-hidden="true"></div></div>
+
+<section class="sec" id="cafes"><div class="w rv"><div class="sh"><h2>Cafés open near you</h2><p>Live from OpenStreetMap, nearest first. Hours appear only where a café has published them. If it has not, we say so and never guess.</p></div>
+<div class="mapgrid"><div>
+<div class="row"><div><button class="btn" id="near" style="width:100%">Use my location</button></div><div><label for="area">Or pick an area</label><select id="area"></select></div></div>
+<div class="row"><div style="flex:2 1 260px"><label for="cq">Search by name</label><input id="cq" type="search" placeholder="Artcaffé, Java House…" autocomplete="off" maxlength="60"></div></div>
+<div class="row"><div><label for="rad">Radius</label><select id="rad"><option value="1000">1 km</option><option value="2000" selected>2 km</option><option value="5000">5 km</option><option value="10000">10 km</option></select></div><div><button class="sw" id="open" aria-pressed="false"><span class="trk"><i></i></span>Open now</button></div></div>
+<label for="pick">Jump to a café</label><select id="pick"><option>Searching…</option></select>
+<p class="mut" id="cs" role="status" style="margin:12px 0 0">Searching…</p><div class="list" id="list"></div></div>
+<div class="mapwrap"><div id="map" role="application" aria-label="Map of nearby cafés"></div></div></div></div></section>
+
+<section class="sec dk" id="brew"><div class="w rv"><div class="sh"><h2>Brew lab</h2><p>Pick a method and enter the coffee you have. The page measures your water and calls every pour on time.</p></div>
+<div class="two"><div><div class="chips" id="methods" role="group" aria-label="Brew method"></div>
+<div class="row"><div><label for="dose">Coffee you have (g)</label><input id="dose" type="number" min="5" max="200" step="0.5"></div><div><label for="srv">Cups sharing it</label><input id="srv" type="number" min="1" max="8" value="1"></div></div>
+<label for="ratio">Your ratio: 1:<span id="rv"></span></label><input id="ratio" type="range" step="0.1">
+<div class="ctl"><button class="gh sm" id="pro">Reset to standard ratio</button><button class="gh sm" id="svr">Save recipe</button><span class="mut" id="prol" style="align-self:center"></span></div>
+<p class="mut" style="margin:14px 0 4px">Water to measure</p><div class="big" id="water" aria-live="polite"></div>
+<p style="margin:14px 0 0"><strong>Grind:</strong> <span id="grind"></span><br><strong>Water temperature:</strong> <span id="temp"></span></p>
+<ol class="sch" id="sch"></ol><div class="tech" id="tech"></div></div>
+<div class="card"><div class="ringbox"><svg viewBox="0 0 120 120" aria-hidden="true"><defs><linearGradient id="gr" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F2B866"/><stop offset="1" stop-color="#C47A2C"/></linearGradient></defs><circle class="rg rbg" cx="60" cy="60" r="54"/><circle class="rg rfg" id="ring" cx="60" cy="60" r="54" stroke-dasharray="339.3" stroke-dashoffset="339.3"/></svg><div id="clock" role="timer">0:00</div></div>
+<div id="cue" aria-live="assertive">Press Start. Each pour is shown and sounded.</div><p class="mut" id="next" style="text-align:center"></p>
+<div class="ctl c"><button class="btn" id="go" style="min-width:140px">Start</button><button class="gh" id="reset">Reset</button><button class="gh" id="skip">Skip cue</button></div>
+<label><input type="checkbox" id="snd" checked>Sound cues</label><label><input type="checkbox" id="auto" checked>Add my cup to the caffeine tracker when done</label>
+<p class="mut" id="tip" style="margin-top:14px"></p><p class="mut" id="bnote" style="margin-top:6px;font-weight:600"></p></div></div>
+<p class="mut" style="margin-top:20px">Prefer your own voice? Record short clips and drop them in an <code>audio</code> folder beside this page. The clip names are listed at the end of the page source.</p>
+</div></section>
+
+<section class="sec" id="caf"><div class="w rv"><div class="sh"><h2>Caffeine tracker</h2><p>Brews you finish in the Brew lab log themselves. It shows what is still in your body, and when to stop so you sleep well.</p></div>
+<div class="win" id="win" role="status" aria-live="polite"></div>
+<div class="two"><div class="card"><h3>Log a drink</h3><div class="chips" id="qa"></div>
+<div class="row"><div><label for="bed">Usual bedtime</label><input id="bed" type="time" value="23:00"></div><div><label for="hl">How fast you clear caffeine</label><select id="hl"><option value="3.5">Fast (3.5 h half-life)</option><option value="5" selected>Average (5 h)</option><option value="7">Slow (7 h)</option></select></div><div><label for="lim">Daily limit (mg)</label><input id="lim" type="number" min="50" max="1000" value="400"></div><div><label for="bw">Body weight (kg)</label><input id="bw" type="number" min="30" max="200" value="70"></div><div><label for="sens">Sleep sensitivity</label><select id="sens"><option value="15">Sensitive</option><option value="25" selected>Balanced</option><option value="40">Relaxed</option></select></div></div>
+<div class="call"><p style="margin:0"><span id="cut" class="ok"></span></p><p class="mut" id="bedmsg" style="margin:4px 0"></p><p id="what" style="margin:0"></p></div>
+<button class="gh sm" id="undo">Remove last entry</button>
+<p class="mut" style="margin-top:14px">Brew estimates assume about 9 mg of caffeine per gram of ground coffee (7 for espresso). Real values vary by bean, roast and extraction, so treat totals as a guide. The curve uses a standard one-compartment model: absorption over about an hour, then steady half-life clearance. History stays on this device for 60 days. Tap “Log” on any café menu to add a drink.</p></div>
+<div class="card"><div class="big" id="tot">0 mg</div><p class="mut" id="msg"></p><h3 style="margin-top:18px">Caffeine in your body today</h3><div id="c1"></div><h3 style="margin-top:18px">Last 7 days</h3><div id="c2"></div></div></div>
+<div style="margin-top:44px;max-width:70ch"><h3>How caffeine affects your sleep</h3>
+<p>Caffeine blocks the signal that makes you feel sleepy. About half is still in your body five hours later and a quarter after ten, though it varies from person to person.</p>
+<p>Late caffeine can make it harder to fall asleep, cut deep sleep short and make you wake more often, even if you fall asleep fine. Many people do better stopping about eight hours before bed. Pregnancy, some medicines and some health conditions lower the amount that is safe, so ask your doctor for your own limit.</p></div>
+</div></section>
+
+<section class="sec sg own" id="owners"><div class="w rv two"><div><h2>Run a café or roastery?<br>Claim your page.</h2><p style="color:var(--mut)">Owner accounts are opening soon. Tell us you are interested and we will reach out when your area goes live.</p>
+<a class="btn" href="https://www.instagram.com/coffeewedontdrink" style="background:#F2B866;color:#241B17">Register your interest</a></div>
+<ul style="align-self:center"><li>Set your own opening hours, so “Open now” is always right.</li><li>Get a verified badge and answer reviews yourself.</li><li>See how many people tapped for directions each month.</li></ul></div></section>
+</main>
+<footer><div class="w"><div><img src="logo-tagline-dark.png" alt="Coffee Nomad. Pour it right. Find it nearby." width="196" height="90" style="height:90px;width:auto"><p style="margin-top:12px">By Coffee We Don’t Drink. Nairobi, Kenya.</p></div>
+<div><strong>Explore</strong><br><a href="#cafes">Cafés near you</a><a href="#brew">Brew lab</a><a href="#caf">Caffeine tracker</a></div>
+<div><strong>Follow</strong><br><a href="https://www.instagram.com/coffeewedontdrink">Instagram</a><a href="https://www.tiktok.com/@coffeewedontdrink">TikTok</a><a href="#" data-pol="cookies">Cookie policy</a><a href="#" data-pol="privacy">Privacy</a><a href="#" data-pol="terms">Terms</a><a href="#" data-pol="allergens">Allergens and age</a><a href="#" data-pol="notify">Notifications</a><a href="#" id="so">Sign out of this device</a><p class="mut" style="margin-top:14px;color:#9C8C7A">Map data © OpenStreetMap contributors. Confirm hours with the café before you travel.</p></div></div></footer>
+<dialog id="cd" class="sheet" aria-labelledby="cn"><button class="x" data-x aria-label="Close">×</button><h2 id="cn"></h2><p id="cs2" style="margin-bottom:6px"></p><p class="mut" id="ch2"></p>
+<div class="ctl"><button class="btn" id="bkt">Book a table now</button><button class="gh" id="mnb">Menu</button><button class="gh" id="fav" aria-pressed="false">Save café</button></div><a id="dir" class="mut" target="_blank" rel="noopener noreferrer">Get directions</a></dialog>
+<dialog id="rd" class="sheet" aria-labelledby="rdt"><h2 id="rdt">Taking you to the official site</h2><p>We are taking you to the official website of <b id="rdn"></b> where you can book a table and place an order. Redirecting in <b id="rdc">4</b>…</p>
+<div class="ctl"><button class="btn" id="rdg">Go now</button><button class="gh" id="rds">Stay here</button></div><p class="mut">That site is outside Coffee Nomad. Its own terms and privacy policy apply there.</p></dialog>
+<dialog id="mn" aria-label="Café menu"><div class="mh"><strong>Menu</strong><button class="gh sm" id="mx" style="color:#F3E8DA;border-color:rgba(243,232,218,.4)">Close</button></div><div class="bkw"><div class="book" id="book"></div></div><div class="bnav"><button class="gh" id="pv">Previous</button><span id="pc"></span><button class="gh" id="nx">Next</button></div></dialog>
+<dialog id="pol"><button class="x" data-x aria-label="Close">×</button><h2 id="pt"></h2><div id="pb"></div><p class="mut">Template text. Have a Kenyan lawyer review it before launch.</p></dialog>
+<dialog id="gate" aria-labelledby="gt0"><h2 id="gt0">Join Coffee Nomad</h2>
+<p class="mut" id="gnote">Create a free profile to find open cafés, follow timed brews and track your caffeine. It is saved on this device for now; passwords and email verification arrive with the account server.</p>
+<div class="oa"><div id="gbox"><button type="button" class="gh" id="goog" style="width:100%">Continue with Google</button></div><button type="button" class="gh" id="appl" style="width:100%">Continue with Apple</button></div><p class="fe" id="oa-e" role="alert"></p>
+<p class="or"><span>or sign up with email</span></p>
+<form id="gf" novalidate>
+<input id="gweb" name="website" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+<label for="gn">Full name</label><input id="gn" autocomplete="name" maxlength="60" aria-describedby="gn-e"><p class="fe" id="gn-e"></p>
+<label for="ge">Email (lowercase, like name@example.com)</label><input id="ge" type="email" inputmode="email" autocomplete="email" autocapitalize="none" spellcheck="false" maxlength="254" aria-describedby="ge-e"><p class="fe" id="ge-e"></p>
+<fieldset class="dob"><legend>Date of birth (day, month, year)</legend><input id="gdd" inputmode="numeric" maxlength="2" placeholder="DD" aria-label="Day" autocomplete="bday-day"><select id="gdm" aria-label="Month"></select><input id="gdy" inputmode="numeric" maxlength="4" placeholder="YYYY" aria-label="Year" autocomplete="bday-year"></fieldset><p class="fe" id="gd-e"></p>
+<label class="ck"><input type="checkbox" id="gt"><span>I accept the <a href="#" data-pol="terms">terms</a>, <a href="#" data-pol="privacy">privacy</a> and <a href="#" data-pol="cookies">cookie</a> policies.</span></label><p class="fe" id="gt-e"></p>
+<label class="ck"><input type="checkbox" id="ga"><span>I understand menus are guides. Food may contain milk, lactose, gluten, eggs, nuts or sesame, and I will tell the café about my allergies. <a href="#" data-pol="allergens">Details</a></span></label><p class="fe" id="ga-e"></p>
+<label class="ck"><input type="checkbox" id="gnn"><span>Send me occasional updates (optional). <a href="#" data-pol="notify">Notifications policy</a></span></label>
+<p id="gerr" class="fe" role="alert"></p><button class="btn" id="gsub" style="width:100%">Create profile and continue</button>
+<button type="button" class="gh" id="gguest" style="width:100%;margin-top:10px">Preview as a guest (developer preview)</button></form></dialog>
+<dialog id="dash" aria-labelledby="dt0"><button class="x" data-x aria-label="Close">×</button><h2 id="dt0">Your dashboard</h2><div class="chips" id="dtabs"></div><div id="dbody"></div></dialog>
+<dialog id="late" class="sheet" aria-labelledby="lt0"><button class="x" data-x aria-label="Close">×</button><h2 id="lt0">Consider decaf</h2><p><b>Consider decaf to prevent caffeine interfering with sleep.</b></p><p class="mut" id="ltd"></p><div class="ctl"><button class="btn" id="ltdc">Log decaf instead</button><button class="gh" id="ltany" hidden>Log it anyway</button><button class="gh" id="ltok">Got it</button></div></dialog>
+<div id="toast" role="status" aria-live="polite"></div>
+<div id="ck" hidden><p>We store a few essential items on your device (your profile, caffeine log and settings). No advertising or tracking cookies. <a href="#" data-pol="cookies">Cookie policy</a></p><button class="btn sm" id="ckb">Got it</button></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="app.js" defer></script>
+</body>
+</html>
