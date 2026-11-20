@@ -1,5 +1,5 @@
 /* CONFIG: add your own IDs to switch on Google and Apple sign-in. See SETUP.md. Never put secrets here. */
-const CONFIG={googleClientId:"",appleServicesId:"",appleRedirectUri:""};
+const CONFIG={googleClientId:"",appleServicesId:"",appleRedirectUri:"",mapTileUrl:"",mapAttribution:"",overpassUrl:""};
 //<pure>
 const $=id=>document.getElementById(id),f=Math.round,
 esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])),
@@ -21,27 +21,55 @@ function km(a,b,c,d){const r=x=>x*Math.PI/180,h=Math.sin(r(c-a)/2)**2+Math.cos(r
 //</pure>
 const AR=[["Nairobi CBD",-1.2864,36.8172],["Westlands",-1.2676,36.8108],["Kilimani",-1.2905,36.7870],["Lavington",-1.2790,36.7700],["Karen",-1.3190,36.7090],["Gigiri",-1.2300,36.8070],["Roysambu",-1.2190,36.8860],["Mombasa",-4.0435,39.6682],["Kisumu",-0.0917,34.7680],["Nakuru",-0.3031,36.0800],["Eldoret",0.5143,35.2698],["Nanyuki",0.0070,37.0722]];
 $("area").innerHTML=AR.map((a,i)=>'<option value="'+i+'">'+a[0]+"</option>").join("");
-let map,layer,P=[],pos=AR[0].slice(1),onlyOpen=false,seq=0,gps=false;
-if(window.L){map=L.map("map").setView(pos,14);L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap contributors"}).addTo(map);layer=L.layerGroup().addTo(map)}else $("map").textContent="The map could not load. Check your connection and refresh."
-const EP=["https://overpass-api.de/api/interpreter","https://overpass.kumi.systems/api/interpreter"];
-async function fetchCafes(lat,lon,r){const q='[out:json][timeout:25];(node["amenity"="cafe"](around:'+r+","+lat+","+lon+');way["amenity"="cafe"](around:'+r+","+lat+","+lon+"););out center tags 150;";
-for(const u of EP){try{const res=await fetch(u,{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:"data="+encodeURIComponent(q)});if(res.ok)return(await res.json()).elements}catch(e){}}return null}
-async function search(){const id=++seq;$("cs").textContent="Searching for cafés…";$("list").innerHTML='<div class="sk"></div><div class="sk"></div><div class="sk"></div><div class="sk"></div>';const els=await fetchCafes(pos[0],pos[1],+$("rad").value);if(id!==seq)return;
-if(!els){P=[];$("list").innerHTML="";$("pick").innerHTML="<option>None to show</option>";$("cs").innerHTML='Could not reach the café data service. <button class="gh sm" id="rt2">Try again</button>';$("rt2").onclick=search;return}
-P=els.filter(e=>e.tags&&e.tags.name).map(e=>{const la=e.lat!==undefined?e.lat:e.center.lat,lo=e.lon!==undefined?e.lon:e.center.lon,t=e.tags;return{n:t.name,la,lo,d:km(pos[0],pos[1],la,lo),oh:t.opening_hours||"",w:t.website||t["contact:website"]||"",W:parseOH(t.opening_hours),a:[t["addr:street"],t["addr:suburb"]].filter(Boolean).join(", ")}}).sort((a,b)=>a.d-b.d);draw()}
+let map,layer,P=[],pos=AR[0].slice(1),onlyOpen=false,seq=0,gps=false,gacc=0,SRC="live",NOTE="",progUntil=0;
+const SK='<div class="sk"></div><div class="sk"></div><div class="sk"></div><div class="sk"></div>',STEPS=[1000,2000,5000,10000];
+const TILES=[CONFIG.mapTileUrl?{u:CONFIG.mapTileUrl,a:CONFIG.mapAttribution||"Map tiles",n:"your provider"}:null,{u:"https://tile.openstreetmap.org/{z}/{x}/{y}.png",a:"© OpenStreetMap contributors",n:"OpenStreetMap"},{u:"https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png",a:"© OpenStreetMap contributors, tiles by OSM France",n:"OSM Humanitarian",s:"abc"},{u:"https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",a:"© OpenStreetMap contributors © CARTO",n:"CARTO",s:"abcd"}].filter(Boolean);
+let ti=0,tOk=0,tBad=0,tl=null;const DG={lib:"checking",tiles:"waiting",data:"waiting",loc:"not asked"};
+function diag(){const d=$("diag");if(d)d.textContent="Map library: "+DG.lib+"\nMap tiles: "+DG.tiles+"\nCafé data: "+DG.data+"\nLocation: "+DG.loc}
+function prog(){progUntil=Date.now()+1200}
+function pinIcon(c){return L.divIcon({className:"pin",html:'<svg viewBox="0 0 28 36" width="28" height="36" aria-hidden="true"><path d="M14 35S3 22 3 13a11 11 0 0 1 22 0c0 9-11 22-11 22z" fill="'+c+'" stroke="#241B17" stroke-width="2"/><path d="M9 11h8v4a4 4 0 0 1-8 0zM17 12h1.5a1.5 1.5 0 0 1 0 3H17" fill="none" stroke="#fff" stroke-width="1.6"/></svg>',iconSize:[28,36],iconAnchor:[14,34]})}
+function useTiles(i){if(tl)map.removeLayer(tl);ti=i;tOk=0;tBad=0;const t=TILES[i];DG.tiles="loading from "+t.n;diag();tl=L.tileLayer(t.u,{maxZoom:19,subdomains:t.s||"abc",attribution:t.a}).addTo(map);
+tl.on("tileload",()=>{tOk++;DG.tiles="ok ("+t.n+")";diag();$("mapnote").textContent=""});
+tl.on("tileerror",()=>{tBad++;if(tOk===0&&tBad>=6){if(ti<TILES.length-1)useTiles(ti+1);else{DG.tiles="failed (every provider)";diag();$("mapnote").textContent="Map tiles could not load. The café list still works. Check your connection or turn off content blockers for this site."}}})}
+if(window.L){try{map=L.map("map",{worldCopyJump:true}).setView(pos,14);layer=L.layerGroup().addTo(map);useTiles(0);DG.lib="loaded (Leaflet "+L.version+")";diag();
+const inv=()=>map.invalidateSize();addEventListener("load",inv);addEventListener("resize",inv);if(window.ResizeObserver)new ResizeObserver(inv).observe($("map"));setTimeout(inv,400);
+map.on("moveend",()=>{if(Date.now()<progUntil)return;const c=map.getCenter();if(km(pos[0],pos[1],c.lat,c.lng)>.4)$("sa").hidden=false})}catch(e){DG.lib="error: "+e.message;diag()}}
+else{DG.lib="not loaded (blocked or offline)";diag();$("map").textContent="The map library could not load. Check your connection, turn off content blockers for this site, and refresh."}
+$("sa").onclick=()=>{if(!map)return;const c=map.getCenter();pos=[c.lat,c.lng];gps=false;gacc=0;$("sa").hidden=true;search()};
+const EP=[CONFIG.overpassUrl,"https://overpass-api.de/api/interpreter","https://overpass.kumi.systems/api/interpreter","https://overpass.private.coffee/api/interpreter"].filter(Boolean);
+async function fetchCafes(lat,lon,r){const key="cn-c|"+lat.toFixed(3)+","+lon.toFixed(3)+"|"+r;let c=null;try{c=JSON.parse(localStorage.getItem(key)||"null")}catch(e){}
+if(c&&Date.now()-c.t<6*36e5){DG.data="saved copy, "+c.e.length+" places";diag();return{els:c.e,from:"cache"}}
+const a="(around:"+r+","+lat+","+lon+")",q='[out:json][timeout:20];(node["amenity"="cafe"]'+a+';way["amenity"="cafe"]'+a+';node["shop"="coffee"]'+a+';way["shop"="coffee"]'+a+';node["craft"="coffee_roaster"]'+a+";);out center tags 200;";let last="";
+for(const u of EP){const ac=new AbortController(),to=setTimeout(()=>ac.abort(),15000),h=u.split("/")[2];
+try{const res=await fetch(u,{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:"data="+encodeURIComponent(q),signal:ac.signal});
+if(!res.ok){last=h+" answered "+res.status;continue}const j=await res.json();if(!j||!Array.isArray(j.elements)){last=h+" sent an unexpected reply";continue}
+try{localStorage.setItem(key,JSON.stringify({t:Date.now(),e:j.elements}));const ks=Object.keys(localStorage).filter(k=>k.indexOf("cn-c|")===0);if(ks.length>8){ks.map(k=>{let t=0;try{t=JSON.parse(localStorage.getItem(k)).t}catch(e){}return[k,t]}).sort((x,y)=>x[1]-y[1]).slice(0,ks.length-8).forEach(x=>localStorage.removeItem(x[0]))}}catch(e){}
+DG.data="live ("+h+", "+j.elements.length+" places)";diag();return{els:j.elements,from:"live"}}
+catch(e){last=h+(e.name==="AbortError"?" timed out":" could not be reached")}finally{clearTimeout(to)}}
+if(c){DG.data="live services failed ("+last+"), showing a saved copy";diag();return{els:c.e,from:"stale"}}
+DG.data="failed ("+last+")";diag();return null}
+async function search(){const id=++seq;$("sa").hidden=true;$("cs").textContent="Searching for cafés…";$("list").innerHTML=SK;
+const r0=+$("rad").value||2000;let r=r0,out=null,ru=r0;
+for(;;){const o=await fetchCafes(pos[0],pos[1],r);if(id!==seq)return;if(!o)break;out=o;ru=r;const n=o.els.filter(e=>e.tags&&e.tags.name).length,nx=STEPS.find(s=>s>r);if(n>=5||!nx)break;r=nx}
+if(!out){P=[];$("list").innerHTML="";$("pick").innerHTML="<option>None to show</option>";$("cs").innerHTML='Could not reach the café data service. <button class="gh sm" id="rt2">Try again</button> <a class="gh sm" target="_blank" rel="noopener noreferrer" href="https://www.google.com/maps/search/coffee+shops/@'+pos[0]+","+pos[1]+',15z">Search on Google Maps</a>';$("rt2").onclick=search;if(map)layer.clearLayers();return}
+const wide=ru!==r0;if(wide)$("rad").value=String(ru);SRC=out.from;NOTE=wide?"Few cafés were close by, so the search widened to "+ru/1000+" km.":"";
+const seen={};P=out.els.filter(e=>e.tags&&e.tags.name).map(e=>{const c=e.center||e,t=e.tags;return{n:t.name,la:c.lat,lo:c.lon,d:km(pos[0],pos[1],c.lat,c.lon),oh:t.opening_hours||"",W:parseOH(t.opening_hours),w:t.website||t["contact:website"]||"",mn:t["website:menu"]||t["menu:url"]||"",ph:t.phone||t["contact:phone"]||"",k:t.craft==="coffee_roaster"?"Roaster":t.shop==="coffee"?"Beans and coffee":"Café",a:[t["addr:street"],t["addr:suburb"]].filter(Boolean).join(", ")}}).sort((a,b)=>a.d-b.d).filter(p=>{const k=p.n.toLowerCase()+"|"+p.la.toFixed(3)+p.lo.toFixed(3);if(seen[k])return false;seen[k]=1;return true});draw()}
 function draw(){const n=eat();P.forEach(p=>p.st=status(p.W,n));const qn=$("cq").value.trim().toLowerCase(),show=P.filter(p=>(!onlyOpen||p.st.s==="o")&&(!qn||p.n.toLowerCase().includes(qn))),hid=P.length-show.length;
 $("cs").textContent=P.length?(onlyOpen?show.length+" open now"+(hid?". "+hid+" hidden: closed or no hours listed.":"."):(qn?show.length+" of "+P.length+" match your search.":P.length+" cafés found, nearest first.")):($("cs").textContent.startsWith("Could")?$("cs").textContent:"No cafés found in this radius. Try a larger one.");
+if(SRC==="stale")$("cs").textContent+=" These are saved results because live data is unavailable.";if(NOTE)$("cs").textContent+=" "+NOTE;
 $("pick").innerHTML=show.length?show.map((p,i)=>'<option value="'+i+'">'+esc(p.n)+" · "+p.d.toFixed(1)+" km</option>").join(""):"<option>None to show</option>";
-$("list").innerHTML=show.slice(0,60).map((p,i)=>'<button class="pl" style="--i:'+Math.min(i,12)+'" data-i="'+i+'"><span class="pn"><strong>'+esc(p.n)+'</strong><em>'+p.d.toFixed(1)+' km</em></span><span class="st '+p.st.s+'">'+p.st.t+'</span>'+(p.a?'<span class="mut">'+esc(p.a)+'</span>':'')+'</button>').join("");
-if(map){layer.clearLayers();L.circleMarker(pos,{radius:8,color:"#fff",weight:3,fillColor:"#1565C0",fillOpacity:1}).bindTooltip("You are here").addTo(layer);
-show.slice(0,60).forEach((p,i)=>{p.m=L.circleMarker([p.la,p.lo],{radius:9,weight:2,color:"#241B17",fillOpacity:.95,fillColor:p.st.s==="o"?"#2F7A3E":p.st.s==="c"?"#8A8178":"#C98A2B"}).on("click",()=>openCafe(p)).addTo(layer)});map.setView(pos,+$("rad").value>=5000?12:14)}
+$("list").innerHTML=show.slice(0,60).map((p,i)=>'<button class="pl" style="--i:'+Math.min(i,12)+'" data-i="'+i+'"><span class="pn"><strong>'+esc(p.n)+'</strong><em>'+p.d.toFixed(1)+' km</em></span><span class="st '+p.st.s+'">'+p.st.t+'</span>'+(p.k&&p.k!=="Café"?'<span class="mut"> · '+esc(p.k)+'</span>':"")+(p.a?'<span class="mut">'+esc(p.a)+'</span>':'')+'</button>').join("");
+if(map){layer.clearLayers();if(gps&&gacc>0&&gacc<3000)L.circle(pos,{radius:gacc,color:"#1565C0",weight:1,fillColor:"#1565C0",fillOpacity:.1,interactive:false}).addTo(layer);
+L.marker(pos,{icon:L.divIcon({className:"me",html:"<i></i>",iconSize:[18,18]}),interactive:false,keyboard:false,zIndexOffset:1000}).addTo(layer);
+show.slice(0,60).forEach(p=>{p.m=L.marker([p.la,p.lo],{icon:pinIcon(p.st.s==="o"?"#2F7A3E":p.st.s==="c"?"#8A8178":"#C98A2B"),title:p.n,alt:p.n,riseOnHover:true}).on("click",()=>openCafe(p)).bindTooltip(esc(p.n),{direction:"top",offset:[0,-30]}).addTo(layer)});
+prog();const pts=show.slice(0,15).map(p=>[p.la,p.lo]);if(pts.length)map.fitBounds(L.latLngBounds(pts.concat([pos])),{padding:[40,40],maxZoom:16});else map.setView(pos,+$("rad").value>=5000?12:14)}
 window.SH=show}
-function focusP(i){const p=window.SH[i];if(!p)return;if(map)map.setView([p.la,p.lo],16);openCafe(p)}
+function focusP(i){const p=window.SH[i];if(!p)return;if(map){prog();map.setView([p.la,p.lo],16)}openCafe(p)}
 $("list").onclick=e=>{const b=e.target.closest(".pl");if(b)focusP(+b.dataset.i)};$("pick").onchange=()=>focusP(+$("pick").value);
 $("open").onclick=()=>{onlyOpen=!onlyOpen;$("open").setAttribute("aria-pressed",onlyOpen);draw()};
-$("area").onchange=()=>{const a=AR[+$("area").value];pos=[a[1],a[2]];gps=false;search()};$("rad").onchange=search;
-function near(){if(!navigator.geolocation){$("cs").textContent="Your browser cannot share location. Pick an area instead.";return}$("cs").textContent="Finding you…";
-navigator.geolocation.getCurrentPosition(g=>{pos=[g.coords.latitude,g.coords.longitude];gps=true;search()},()=>{$("cs").textContent="Location is blocked. Allow it in your browser, or pick an area."},{enableHighAccuracy:true,timeout:15000})}
+$("area").onchange=()=>{const a=AR[+$("area").value];pos=[a[1],a[2]];gps=false;gacc=0;search()};$("rad").onchange=search;
+function near(){if(!navigator.geolocation){DG.loc="not supported by this browser";diag();$("cs").textContent="Your browser cannot share location. Pick an area instead.";return}$("cs").textContent="Finding you…";DG.loc="asking";diag();
+navigator.geolocation.getCurrentPosition(g=>{pos=[g.coords.latitude,g.coords.longitude];gps=true;gacc=g.coords.accuracy||0;DG.loc="allowed (accurate to about "+Math.round(gacc)+" m)";diag();search()},er=>{DG.loc=er.code===1?"blocked":er.code===3?"timed out":"unavailable";diag();$("cs").textContent=er.code===1?"Location is blocked. Allow it in your browser settings, or pick an area.":"Could not find your location. Pick an area instead."},{enableHighAccuracy:false,timeout:12000,maximumAge:300000})}
 $("near").onclick=near;$("heroNear").onclick=()=>near();
 try{navigator.permissions.query({name:"geolocation"}).then(r=>{if(r.state==="granted")near();else search()}).catch(search)}catch(e){search()}
 setInterval(()=>{if(P.length)draw()},60000);
@@ -122,29 +150,32 @@ else{if(afile){afile.pause();afile=null}else stopSynth()}};
 /* ---- café sheet, booking hand-off, menu book, policies, sign-up gate ---- */
 const toast=m=>{const t=$("toast");t.textContent=m;t.classList.add("on");clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove("on"),2800)};
 const OFF=[[/art\s*caff/i,"https://www.artcaffe.co.ke"],[/java\s*house/i,"https://javahouseafrica.com"]];
-function site(p){let u=p.w;if(!u){const o=OFF.find(x=>x[0].test(p.n));u=o?o[1]:""}if(!u)return"";try{const x=new URL(/^https?:\/\//i.test(u)?u:"https://"+u);if(!/^https?:$/.test(x.protocol))return"";x.searchParams.set("utm_source","coffeenomad");x.searchParams.set("utm_medium","referral");return x.href}catch(e){return""}}
+function tag(u){if(!u)return"";try{const x=new URL(/^https?:\/\//i.test(u)?u:"https://"+u);if(!/^https?:$/.test(x.protocol))return"";x.searchParams.set("utm_source","coffeenomad");x.searchParams.set("utm_medium","referral");return x.href}catch(e){return""}}
+function site(p){let u=p.w;if(!u){const o=OFF.find(x=>x[0].test(p.n));u=o?o[1]:""}return tag(u)}
 let CP=null,rt=null;
-function openCafe(p){CP=p;{const rc=jget("cn-rcv").filter(x=>x.k!==cafeKey(p));rc.push({k:cafeKey(p),n:p.n,a:p.a||"",t:Date.now()});jset("cn-rcv",rc.slice(-10))}$("cn").textContent=p.n;$("cs2").innerHTML='<span class="st '+p.st.s+'">'+esc(p.st.t)+"</span>"+p.d.toFixed(1)+" km"+(p.a?" · "+esc(p.a):"");$("ch2").textContent=p.oh?"Hours: "+p.oh:"Opening hours are not published for this café.";$("dir").href="https://www.google.com/maps/dir/?api=1&destination="+p.la+","+p.lo;favState();$("cd").showModal()}
-$("bkt").onclick=()=>{const p=CP,u=site(p);$("cd").close();if(!u){toast("No official website is listed for "+p.n+" yet. Try Directions.");return}
-$("rdn").textContent=p.n;$("rdc").textContent="4";$("rd").showModal();let n=4;clearInterval(rt);rt=setInterval(()=>{n--;$("rdc").textContent=n;if(n<=0){clearInterval(rt);go(p,u)}},1000);$("rdg").onclick=()=>{clearInterval(rt);go(p,u)}};
+function openCafe(p){CP=p;{const rc=jget("cn-rcv").filter(x=>x.k!==cafeKey(p));rc.push({k:cafeKey(p),n:p.n,a:p.a||"",t:Date.now()});jset("cn-rcv",rc.slice(-10))}$("cn").textContent=p.n;$("cs2").innerHTML='<span class="st '+p.st.s+'">'+esc(p.st.t)+"</span>"+p.d.toFixed(1)+" km"+(p.a?" · "+esc(p.a):"");$("ch2").textContent=p.oh?"Hours: "+p.oh:"Opening hours are not published for this café.";$("dir").href="https://www.google.com/maps/dir/?api=1&destination="+p.la+","+p.lo;{const ph=String(p.ph||"").trim(),okp=/^[+\d][\d\s()-]{5,22}$/.test(ph);$("tel").hidden=!okp;if(okp){$("tel").href="tel:"+ph.replace(/[^\d+]/g,"");$("tel").textContent="Call "+ph}}favState();$("cd").showModal()}
+function handoff(p,u,why){$("rdn").textContent=p.n;$("rdw").textContent=why;$("rdc").textContent="4";$("rd").showModal();let n=4;clearInterval(rt);rt=setInterval(()=>{n--;$("rdc").textContent=n;if(n<=0){clearInterval(rt);go(p,u)}},1000);$("rdg").onclick=()=>{clearInterval(rt);go(p,u)}}
+$("bkt").onclick=()=>{const p=CP,u=site(p);$("cd").close();if(!u){toast("No official website is listed for "+p.n+" yet. Try Directions.");return}handoff(p,u,"where you can book a table and place an order")};
 function go(p,u){try{const o=JSON.parse(localStorage.getItem("cn-out")||"[]");o.push({c:p.n,t:Date.now()});localStorage.setItem("cn-out",JSON.stringify(o.slice(-200)))}catch(e){}location.assign(u)}
 $("rds").onclick=()=>$("rd").close();$("rd").addEventListener("close",()=>clearInterval(rt));
-$("mnb").onclick=()=>{$("cd").close();openMenu(CP)};
+$("mnb").onclick=async()=>{const p=CP;$("cd").close();const d=await findMenu(p);if(d){openMenu(p,d);return}
+const u=tag(p.mn)||site(p);$("nmn").textContent=p.n;$("nmo").hidden=!u;$("nmo").onclick=()=>{$("nm").close();handoff(p,u,"to see its current menu")};$("nm").showModal()};
 document.addEventListener("click",e=>{const x=e.target.closest("[data-x]");if(x)x.closest("dialog").close();if(e.target.tagName==="DIALOG"&&(e.target.id==="cd"||e.target.id==="pol"))e.target.close();
 const a=e.target.closest("[data-pol]");if(a){e.preventDefault();const k=POL[a.dataset.pol];$("pt").textContent=k[0];$("pb").innerHTML=k[1];if(!$("pol").open)$("pol").showModal()}});
-const SM=[["Coffee","Espresso and milk",[["Espresso","Single shot",63,""],["Americano","Double shot, hot water",126,""],["Cappuccino","Double shot, steamed milk",126,"Milk"],["Latte","Double shot, more milk",126,"Milk"],["Flat white","Double shot, velvet milk",126,"Milk"],["Filter coffee","Brewed to order",95,""]]],
-["Tea and more","Cold and gentle",[["Cold brew","Slow-steeped, over ice",140,""],["Black tea","Pot or cup",47,""],["Chai latte","Spiced tea, milk",50,"Milk"],["Green tea","Light and grassy",28,""],["Hot chocolate","Rich and sweet",10,"Milk"],["Fresh juice","Seasonal fruit",0,""]]],
-["From the kitchen","Bites and meals",[["Avocado toast","Sourdough, lime, seeds",0,"Gluten, sesame"],["Eggs on toast","Your style",0,"Egg, gluten"],["Chicken sandwich","Grilled, greens, aioli",0,"Gluten, egg"],["Croissant","Butter, baked daily",0,"Gluten, milk"],["Pancakes","Honey and berries",0,"Gluten, egg, milk"],["Garden salad","Leaves, seeds, vinaigrette",0,"Mustard"]]]],
-AD=["After dark (18+)","Adults only",[["Local beer","Ask what is on tap",0,"Alcohol, gluten"],["House wine","Red or white",0,"Alcohol, sulphites"],["Irish coffee","Whiskey, coffee, cream",63,"Alcohol, milk"]]];
 let U=null;try{U=JSON.parse(localStorage.getItem("cn-user"))}catch(e){}
-function menuPages(c){const L=SM.slice();if(U&&U.adult)L.push(AD);
-const P=['<div class="cv"><small>Menu</small><h2>'+esc(c.n)+'</h2><p>Swipe, tap the page edges, or use the arrows to turn the page.</p><p class="al">Sample menu. The café’s official menu appears here once it claims its page. Caffeine amounts are estimates.</p></div>'];
-L.forEach(g=>P.push("<h3>"+g[0]+'</h3><p class="sub">'+g[1]+"</p>"+g[2].map(i=>'<div class="it"><div><b>'+i[0]+"</b><span>"+i[1]+"</span>"+(i[3]?"<em>Contains: "+i[3]+"</em>":"")+"</div>"+(i[2]>0?'<button data-lg="'+i[0]+'" data-mg="'+i[2]+'">Log '+i[2]+" mg</button>":"")+"</div>").join("")));
-P.push('<h3>Before you order</h3><p>Tell the café about any allergy or intolerance. Kitchens handle milk, lactose, gluten, eggs, nuts and sesame, so cross-contact can happen.</p><p class="al">Prices and availability are set by each café.</p>');return P}
+const safeUrl=u=>{try{const x=new URL(u);return/^https?:$/.test(x.protocol)?x.href:""}catch(e){return""}};
+let MIDX=null;const MCACHE={};
+async function menuIndex(){if(MIDX)return MIDX;try{const r=await fetch("menus/index.json",{cache:"no-cache"});MIDX=r.ok?((await r.json()).menus||[]):[]}catch(e){MIDX=[]}return MIDX}
+async function findMenu(p){const m=(await menuIndex()).find(x=>{try{return new RegExp(x.match,"i").test(p.n)}catch(e){return false}});if(!m)return null;if(MCACHE[m.file])return MCACHE[m.file];
+try{const r=await fetch("menus/"+encodeURIComponent(m.file));if(!r.ok)return null;const d=await r.json();if(!d||!Array.isArray(d.sections))return null;MCACHE[m.file]=d;return d}catch(e){return null}}
+function estMg(n){n=String(n).toLowerCase();if(/decaf/.test(n))return 5;if(/cold brew/.test(n))return 140;if(/herbal|dawa|rooibos|chamomile|lemonade|juice|smoothie|milkshake|soda|water/.test(n))return 0;if(/^(single )?espresso$|single|ristretto/.test(n))return 63;if(/doppio|double espresso/.test(n))return 126;if(/americano|latte|cappuccino|flat white|macchiato|mocha|cortado|affogato|espresso/.test(n))return 126;if(/filter|brewed|drip|pour|kahawa|coffee pot|french press|aeropress|v60|chemex|iced coffee/.test(n))return 95;if(/matcha/.test(n))return 70;if(/green tea/.test(n))return 28;if(/chai|tea/.test(n))return 47;if(/hot chocolate|drinking chocolate/.test(n))return 10;return 0}
+function menuPages(c,d){const ad=!!(U&&U.adult),src=safeUrl(d.source),P=['<div class="cv"><small>Menu</small><h2>'+esc(c.n)+'</h2><p>Swipe, tap the page edges, or use the arrows to turn the page.</p><p class="al">Supplied by '+esc(d.suppliedBy||c.n)+(d.updated?", updated "+esc(d.updated):"")+". Items and prices change, so confirm with the café."+(src?' <a href="'+esc(src)+'" target="_blank" rel="noopener noreferrer">Official site</a>':"")+"</p></div>"];
+d.sections.forEach(s=>{if(s.adults&&!ad)return;P.push("<h3>"+esc(s.title)+"</h3>"+(s.note?'<p class="sub">'+esc(s.note)+"</p>":"")+(s.items||[]).map(i=>{const mg=i.caffeine!=null?+i.caffeine:(s.drinks?estMg(i.name):0);return'<div class="it"><div><b>'+esc(i.name)+"</b>"+(i.desc?"<span>"+esc(i.desc)+"</span>":"")+(i.price!=null?"<span>"+esc((d.currency||"KES")+" "+i.price)+"</span>":"")+(i.allergens&&i.allergens.length?"<em>Contains: "+esc(i.allergens.join(", "))+"</em>":"")+"</div>"+(mg>0?'<button data-lg="'+esc(i.name)+'" data-mg="'+mg+'">Log ~'+mg+" mg</button>":"")+"</div>"}).join(""))});
+P.push("<h3>Before you order</h3><p>Tell the café about any allergy or intolerance. Kitchens handle milk, lactose, gluten, eggs, nuts and sesame, so cross-contact can happen.</p>"+'<p class="al">Caffeine amounts are estimates and vary by café and size.</p>');return P}
 let cp=0,PG=0;const bk=$("book");
 function paint(){[...bk.children].forEach((p,i)=>{p.classList.toggle("fl",i<cp);p.style.transition="";p.style.removeProperty("--a")});$("pc").textContent=(cp+1)+" / "+PG;$("pv").disabled=cp===0;$("nx").disabled=cp===PG-1}
 function flip(d){const n=cp+d;if(n<0||n>=PG)return;cp=n;paint()}
-function openMenu(c){const h=menuPages(c);PG=h.length;cp=0;bk.innerHTML=h.map((x,i)=>'<section class="pg" style="z-index:'+(PG-i)+'"><div class="pi">'+x+"</div></section>").join("");paint();$("mn").showModal()}
+function openMenu(c,d){const h=menuPages(c,d);PG=h.length;cp=0;bk.innerHTML=h.map((x,i)=>'<section class="pg" style="z-index:'+(PG-i)+'"><div class="pi">'+x+"</div></section>").join("");paint();$("mn").showModal()}
 $("pv").onclick=()=>flip(-1);$("nx").onclick=()=>flip(1);$("mx").onclick=()=>$("mn").close();
 $("mn").addEventListener("keydown",e=>{if(e.key==="ArrowRight")flip(1);if(e.key==="ArrowLeft")flip(-1)});
 let dx0=null,dl=null,dd=0;

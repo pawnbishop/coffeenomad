@@ -188,3 +188,15 @@ ul.ac{list-style:none;padding:0;margin:0}ul.ac li{display:flex;gap:10px;justify-
 @media (max-width:520px){:root[data-theme="dark"] .logo .b{display:none}:root[data-theme="dark"] .logo .d{display:block}}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .logo .a{display:none}:root:not([data-theme="light"]) .logo .b{display:block}}
 @media (prefers-color-scheme:dark) and (max-width:520px){:root:not([data-theme="light"]) .logo .b{display:none}:root:not([data-theme="light"]) .logo .d{display:block}}
+
+/* v11: map look, legend, pins, menu notes */
+.leaflet-tile-pane{filter:sepia(.28) saturate(.85) hue-rotate(-8deg) contrast(.96)}
+:root[data-theme="dark"] .leaflet-tile-pane{filter:invert(.92) hue-rotate(180deg) sepia(.35) saturate(.7) brightness(.9) contrast(.9)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .leaflet-tile-pane{filter:invert(.92) hue-rotate(180deg) sepia(.35) saturate(.7) brightness(.9) contrast(.9)}}
+.leaflet-container{font-family:inherit}.pin{background:none;border:0}.pin svg{filter:drop-shadow(0 2px 2px rgba(0,0,0,.35))}
+.me{background:none;border:0}.me i{display:block;width:18px;height:18px;border-radius:50%;background:#1565C0;border:3px solid #fff;box-shadow:0 0 0 0 rgba(21,101,192,.5);animation:ping2 2s infinite}@keyframes ping2{70%{box-shadow:0 0 0 14px rgba(21,101,192,0)}100%{box-shadow:0 0 0 0 rgba(21,101,192,0)}}
+.mapwrap{position:sticky}@media (max-width:1024px){.mapwrap{position:relative}}
+#sa{position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:500;box-shadow:0 6px 18px rgba(0,0,0,.3)}
+.lgd{display:flex;flex-wrap:wrap;gap:6px 16px;margin:10px 2px 0;font-size:.85rem;color:var(--mut)}.lgd span{display:inline-flex;align-items:center;gap:6px}
+.dot{width:12px;height:12px;border-radius:50%;display:inline-block;border:2px solid #241B17}.dot.o{background:#2F7A3E}.dot.c{background:#8A8178}.dot.u{background:#C98A2B}.dot.me{background:#1565C0}
+details.dg{margin-top:8px;font-size:.85rem;color:var(--mut)}details.dg pre{white-space:pre-wrap;background:var(--band);border-radius:10px;padding:10px;margin:8px 0 0}

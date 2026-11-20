@@ -27,7 +27,7 @@ Do the same drag-and-drop in step 3. GitHub replaces files that have the same na
 - Open the site on your phone and choose "Add to Home Screen" to see the app icon.
 
 ## Run the checks (optional)
-In the folder: `npm i jsdom@22` then `node tests/smoke.js`. Last run: all passed in a simulated browser. They do not replace checking on real phones.
+In the folder: `npm i jsdom@22 leaflet@1.9.4` then `node tests/smoke.js`. Last run: all passed in a simulated browser. They do not replace checking on real phones.
 
 ## Switch on Google sign-in (account chooser on the visitor's device)
 You need a Google Cloud project. I cannot create credentials for you.
@@ -68,3 +68,22 @@ Put your own footage at `assets/v60-pour.mp4` and a still frame at `assets/v60-p
 - **Filming:** window light, steady phone, close on the bloom and the spiral pour. Avoid logos and music.
 - **Poster:** one clear frame as a JPEG under 150 KB.
 A longer full brew video (3 to 4 minutes) belongs in the Brew lab instead, ideally hosted on YouTube and embedded, not stored in the repository.
+
+## Real café menus (no guessed menus)
+Coffee Nomad does not show a menu unless the café has shared one. Items, prices and allergens change (Artcaffé, for example, rotates its menu with the seasons), and a wrong allergen line is a safety problem. Copying menus from delivery apps or third-party uploads would also be unreliable and unauthorised.
+- **Without a supplied menu:** the Menu button explains this and offers an **Open the official menu** button that takes the visitor to the café's own website (through the "taking you to the official site" notice).
+- **With a supplied menu:** the full-screen page-turning book opens, shows who supplied it and when, and lets users log drinks (caffeine is estimated from the drink name unless you give a number).
+- **To add a real menu today, no backend needed:**
+  1. Get the café's permission and its current menu.
+  2. Copy `menus/_template.json` to, for example, `menus/artcaffe.json` and fill it in exactly as the café writes it (remove the `_readme` line).
+  3. Open `menus/index.json` and add `{ "file": "artcaffe.json", "match": "art\\s*caff" }` to the list. `match` is a name pattern, so one file can cover every branch.
+  4. Commit on GitHub. The menu appears for every matching café.
+- In Phase 3 café owners will upload and update their own menus.
+
+## Map and "cafés near me"
+- **Use my location** centres the map on you, draws an accuracy ring, searches cafés, coffee-bean shops and roasters nearby, and sorts them nearest first. If fewer than five are close, it widens the search (1, 2, 5, then 10 km) and says so.
+- Panning the map shows **Search this area**. The map key explains the pin colours.
+- Data comes from OpenStreetMap through public servers. It tries several servers, waits at most 15 seconds each, keeps a saved copy for 6 hours, and shows that copy (labelled) if every server is down.
+- **Coverage is the real limit:** OpenStreetMap in Kenya is incomplete, so some cafés, even well known ones, may be missing or have no opening hours. The lasting fix is a licensed places service behind your backend (Phase 2, step 2.1) plus café owners confirming their own listings.
+- **Map not showing?** Open the **Map not working? Show diagnostics** panel under the map. It says which part failed (map library, map tiles, café data or location). Send me that text.
+- **Better map tiles:** the page falls back through three public tile providers. For heavier traffic use a hosted provider such as MapTiler: create an account, restrict the key to your website address, then set `CONFIG.mapTileUrl` in `app.js` (for example `https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=YOUR_KEY`) and add `https://api.maptiler.com` to `img-src` in the Content-Security-Policy line of `index.html`. A key in a web page is visible to visitors, so always restrict it.
